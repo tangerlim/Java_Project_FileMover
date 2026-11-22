@@ -1,0 +1,43 @@
+{
+  "watchDir": "C:\\Users\\likgr\\Downloads",
+  "baseDir": "C:\\Users\\likgr\\Desktop\\--",
+  "rules": [
+    {
+      "name": "데이터통신 강의",
+      "match": {
+        "extensions": ["pdf", "pptx"],
+        "namePattern": "^lecture_(\\d+)"
+      },
+      "target": "데이터통신",
+      "rename": "데이터통신_{1}주차.{ext}"
+    },
+    {
+      "name": "운영체제",
+      "match": {
+        "glob": "*김우성*"
+      },
+      "target": "운영체제"
+    },
+    {
+      "name": "데이터통신",
+      "match": {
+        "glob": "ch[0-9]*"
+      },
+      "target": "데이터통신"
+    },
+    {
+      "name": "고웹프",
+      "match": {
+        "glob": "*주차*수업자료*"
+      },
+      "target": "고웹프"
+    },
+    {
+      "name": "Java",
+      "match": {
+        "glob": "*Java*"
+      },
+      "target": "Java"
+    }
+  ]
+}
