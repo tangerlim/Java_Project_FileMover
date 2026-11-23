@@ -13,6 +13,7 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -46,12 +47,19 @@ public class FolderWatcher implements Runnable {
     private final Map<Path, ScheduledFuture<?>> pending = new ConcurrentHashMap<>();
     // 잠깐 무시할 파일 → 무시 끝나는 시각(ms). 되돌리기로 돌아온 파일을 다시 정리하지 않기 위해
     private final Map<Path, Long> ignoreUntil = new ConcurrentHashMap<>();
+    // 감시 시작 전에 이미 본 파일들 (기존 파일 미리보기에 나왔던 것). 시작 직후 재검사에서 제외
+    private final Set<Path> seenBeforeStart;
     private WatchService watchService;
 
     public FolderWatcher(Path dir, Consumer<Path> handler, long stableMillis) {
+        this(dir, handler, stableMillis, Set.of());
+    }
+
+    public FolderWatcher(Path dir, Consumer<Path> handler, long stableMillis, Set<Path> seenBeforeStart) {
         this.dir = dir;
         this.handler = handler;
         this.stableMillis = stableMillis;
+        this.seenBeforeStart = seenBeforeStart;
     }
 
     // 별도 스레드에서 실행됨: new Thread(watcher).start()
@@ -61,6 +69,8 @@ public class FolderWatcher implements Runnable {
             watchService = FileSystems.getDefault().newWatchService();
             dir.register(watchService, ENTRY_CREATE, ENTRY_MODIFY);
             System.out.println("[감시 시작] " + dir);
+            // 기존 파일 질문에 답하는 동안(감시 등록 전) 생긴 파일은 이벤트가 없음 → 한 번 훑어서 처리
+            scanNewSinceStart();
 
             while (true) {
                 WatchKey key = watchService.take(); // 이벤트 올 때까지 대기 (blocking)
@@ -168,6 +178,16 @@ public class FolderWatcher implements Runnable {
         } else {
             pending.remove(file);
             System.out.println("[감시] 파일이 계속 변경 중이라 건너뜀: " + file.getFileName());
+        }
+    }
+
+    private void scanNewSinceStart() {
+        try (var stream = Files.list(dir)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(file -> !seenBeforeStart.contains(file))
+                    .forEach(this::onEvent);
+        } catch (IOException e) {
+            System.out.println("[감시] 시작 시 검사 실패: " + e.getMessage());
         }
     }
 

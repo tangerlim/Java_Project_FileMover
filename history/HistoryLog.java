@@ -15,7 +15,7 @@ import java.util.List;
 //
 // "실행(run)" = 되돌리기 한 번에 되돌아가는 단위
 //   - 기존 파일 일괄 이동: 승인한 묶음 전체가 실행 1번
-//   - 실시간 감시: 새 파일 하나하나가 각각 실행 1번
+//   - 실시간 감시: y 한 번에 승인한 대기 묶음(ApprovalQueue) 전체가 실행 1번
 public class HistoryLog {
 
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

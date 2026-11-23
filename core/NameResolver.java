@@ -47,6 +47,11 @@ public class NameResolver {
     }
 
     private String groupValue(List<String> groups, int index) {
+        // namePattern이 없는 규칙이면 groups가 빈 리스트 → "괄호가 -1개" 대신 원인을 바로 안내
+        if (groups.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "namePattern이 없는 규칙에서는 {" + index + "}을 쓸 수 없습니다 (rename에는 {name}, {ext}, 날짜만 가능)");
+        }
         if (index >= groups.size()) {
             throw new IllegalArgumentException(
                     "{" + index + "}에 해당하는 정규식 그룹이 없습니다 (namePattern에 괄호가 " + (groups.size() - 1) + "개)");

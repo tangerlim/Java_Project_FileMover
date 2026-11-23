@@ -3,39 +3,33 @@
   "baseDir": "C:\\Users\\likgr\\Desktop\\--",
   "rules": [
     {
-      "name": "데이터통신 강의",
+      "name": "WebServerProgram",
       "match": {
-        "extensions": ["pdf", "pptx"],
-        "namePattern": "^lecture_(\\d+)"
+        "namePattern": "^(?=.*lab)\\D*(\\d+)(?=.*\\.)"
       },
-      "target": "데이터통신",
-      "rename": "데이터통신_{1}주차.{ext}"
-    },
-    {
-      "name": "운영체제",
-      "match": {
-        "glob": "*김우성*"
-      },
-      "target": "운영체제"
+      "target": "WebServerProgram",
+      "rename": "lab{1}.{ext}"
     },
     {
       "name": "데이터통신",
       "match": {
-        "glob": "ch[0-9]*"
+        "namePattern": "(?<![a-z])ch(\\d+)"
       },
-      "target": "데이터통신"
+      "target": "데이터통신",
+      "rename": "ch_{1}.{ext}"
     },
     {
       "name": "고웹프",
       "match": {
-        "glob": "*주차*수업자료*"
+        "namePattern": "(\\d+)\\s*주차.*수업자료"
       },
-      "target": "고웹프"
+      "target": "고웹프",
+      "rename": "react_{1}.{ext}"
     },
     {
       "name": "Java",
       "match": {
-        "glob": "*Java*"
+        "glob": "*주차*강의자료*"
       },
       "target": "Java"
     }

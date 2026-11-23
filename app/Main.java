@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Stream;
 
 // 실행 흐름
@@ -66,28 +68,31 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
 
         // 2. 기존 파일 정리 (미리보기 → 승인)
-        organizeExisting(processor, watchDir, scanner);
+        Set<Path> seen = organizeExisting(processor, watchDir, scanner);
 
         // 3. 실시간 감시 + 명령 입력
-        runWatch(processor, new UndoManager(history), watchDir, config.getStableSeconds(), scanner);
+        //    seen = 2단계에서 이미 물어본 파일 → 감시 시작 직후 재검사에서 다시 묻지 않음
+        runWatch(processor, new UndoManager(history), watchDir, config.getStableSeconds(), scanner, seen);
     }
 
     // 폴더에 이미 있는 파일: 어디로 갈지 보여주고, y를 입력해야 실제로 이동
-    private static void organizeExisting(FileProcessor processor, Path watchDir, Scanner scanner) {
+    // 반환값 = 이번에 본 파일 목록 (감시 시작 후 "그 사이 새로 생긴 파일"을 가려내는 데 씀)
+    private static Set<Path> organizeExisting(FileProcessor processor, Path watchDir, Scanner scanner) {
         List<Path> files;
         try (Stream<Path> stream = Files.list(watchDir)) {
             files = stream.filter(Files::isRegularFile).toList(); // 폴더는 제외하고 일반 파일만
         } catch (IOException e) {
             System.out.println("폴더를 읽을 수 없습니다: " + e.getMessage());
-            return;
+            return Set.of();
         }
+        Set<Path> seen = new HashSet<>(files);
 
         System.out.println();
         System.out.println("[기존 파일 미리보기] " + watchDir);
         List<MovePlan> plans = processor.previewAll(files);
         if (plans.isEmpty()) {
             System.out.println("  규칙에 맞는 기존 파일이 없습니다.");
-            return;
+            return seen;
         }
 
         System.out.print("위 " + plans.size() + "개 파일을 이동할까요? (y: 이동 / n: 건너뛰기) > ");
@@ -98,14 +103,15 @@ public class Main {
         } else {
             System.out.println("기존 파일은 그대로 둡니다.");
         }
+        return seen;
     }
 
     // 감시는 별도 스레드에서, main 스레드는 명령 입력 대기
     // 새 파일은 바로 옮기지 않고 ApprovalQueue에 쌓아 두었다가 y 입력 시 이동
     private static void runWatch(FileProcessor processor, UndoManager undo, Path watchDir,
-                                 double stableSeconds, Scanner scanner) {
+                                 double stableSeconds, Scanner scanner, Set<Path> seen) {
         ApprovalQueue queue = new ApprovalQueue(processor);
-        FolderWatcher watcher = new FolderWatcher(watchDir, queue::offer, (long) (stableSeconds * 1000));
+        FolderWatcher watcher = new FolderWatcher(watchDir, queue::offer, (long) (stableSeconds * 1000), seen);
         Thread watchThread = new Thread(watcher, "folder-watcher");
         watchThread.start();
 
